@@ -1,0 +1,30 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ckp-server",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--prefix",
+        "ckp-server"
+      ],
+      "port": 4000
+    },
+    {
+      "name": "ckp-web",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "ckp-app/node_modules/expo/bin/cli",
+        "start",
+        "ckp-app",
+        "--web",
+        "--port",
+        "8081",
+        "--clear"
+      ],
+      "port": 8081
+    }
+  ]
+}

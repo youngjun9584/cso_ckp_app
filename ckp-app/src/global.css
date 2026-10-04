@@ -1,0 +1,25 @@
+/* 웹 전용 전역 스타일 (네이티브에서는 무시된다) */
+html,
+body {
+  background-color: #f5f7fa;
+}
+
+body {
+  font-family: Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic',
+    '맑은 고딕', 'Noto Sans KR', 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #0f2342;
+}
+
+/* 키보드 사용자를 위한 포커스 표시 */
+:focus-visible {
+  outline: 2px solid #0873b9;
+  outline-offset: 2px;
+}
+
+/* 입력란은 컴포넌트가 테두리로 포커스를 표시한다 */
+input:focus-visible,
+textarea:focus-visible {
+  outline: none;
+}

@@ -1,0 +1,187 @@
+import { useEffect, useRef, useState } from 'react';
+import { Image, Platform, Pressable, StyleSheet, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { router, useNavigation } from 'expo-router';
+import { usePreventRemove } from 'expo-router/react-navigation';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import Sortable from 'react-native-sortables';
+import { AppHeader, Badge, Button, Card, confirm, ErrorState, FormScroll, IconButton, ImageViewerModal, LoadingState, Screen, Text, TextField, toast } from '@/components/ui';
+import { ClientPicker } from '@/features/clients/ClientPicker';
+import { getApi, getErrorMessage } from '@/lib/api';
+import { useAuth, useLimits } from '@/lib/auth';
+import { useBeforeUnloadWeb, useLeaveGuard } from '@/lib/navigation-guard';
+import { colors, spacing } from '@/theme';
+import { useEdiDraft, ediDraftStore } from './draft/store';
+import { hasDraftContent, step2Blocker, summarizeUploads, validateStep1 } from './draft/progress';
+import { submitDraft } from './draft/submit';
+import { processPhoto, releasePhotos } from './media/process';
+import { DropZone } from './media/DropZone';
+import { invalidateEdiHistory } from './history/queries';
+
+export default function EdiNewScreen() {
+  const draft = useEdiDraft();
+  const { user } = useAuth();
+  const limits = useLimits();
+  const queryClient = useQueryClient();
+  const navigation = useNavigation();
+  const [processing, setProcessing] = useState(false);
+  const [processedCount, setProcessedCount] = useState('');
+  const [viewer, setViewer] = useState<number | null>(null);
+  const [attempted, setAttempted] = useState(false);
+  const picking = useRef(false);
+  const maxPhotos = Math.min(30, limits.ediMaxPhotos);
+  const status = useQuery({ queryKey: ['edi', 'status'], queryFn: ({ signal }) => getApi().getEdiStatus({ signal }) });
+  const months = useQuery({ queryKey: ['edi', 'month-options'], queryFn: ({ signal }) => getApi().getEdiMonthOptions({ signal }) });
+  const locked = draft.phase !== 'editing';
+  const uncertain = draft.submit.stage === 'uncertain';
+  const active = draft.phase === 'submitting' && !uncertain;
+  const targetYm = draft.targetYm ?? months.data?.options.find((o) => o.label === months.data?.defaultLabel)?.ym ?? null;
+  const errors = validateStep1(draft, targetYm, limits.memoMaxLength);
+  if (targetYm && months.data && !months.data.options.some((o) => o.ym === targetYm)) errors.targetYm = '대상 연월이 변경되었습니다. 다시 선택해 주세요.';
+  const blocker = step2Blocker(draft.photos, limits.ediMinPhotos, maxPhotos);
+  const summary = summarizeUploads(draft.photos);
+  const leave = processing ? '사진을 처리하는 중입니다. 화면을 나가도 처리는 계속됩니다.'
+    : draft.phase === 'submitting' ? '등록 결과를 확인 중입니다. 앱을 종료하거나 새로고침하지 마세요.'
+    : hasDraftContent(draft) ? '작성 내용은 화면을 나가도 유지됩니다. 앱 종료나 새로고침 시에는 사라집니다.' : null;
+  useLeaveGuard('edi-draft', () => leave);
+  useBeforeUnloadWeb(leave);
+  usePreventRemove(!!leave, ({ data }) => {
+    void confirm({ title: '이 화면을 나갈까요?', message: leave ?? '', confirmText: '나가기', cancelText: '계속 작성' })
+      .then((ok) => { if (ok) navigation.dispatch(data.action); });
+  });
+
+  useEffect(() => { releasePhotos(ediDraftStore.get().ensureOwner(user?.usrId ?? null)); }, [user?.usrId]);
+  useEffect(() => {
+    if (draft.result) void invalidateEdiHistory(queryClient, draft.result);
+  }, [draft.result, queryClient]);
+
+  async function addAssets(assets: ImagePicker.ImagePickerAsset[]) {
+    if (picking.current || ediDraftStore.get().phase !== 'editing' || assets.length === 0) return;
+    const current = ediDraftStore.get();
+    const remaining = maxPhotos - current.photos.length;
+    if (assets.length > remaining) {
+      toast.warning(`최대 ${maxPhotos}장까지 등록할 수 있습니다. 이번에는 ${Math.max(0, remaining)}장 이하로 다시 선택해 주세요. 선택한 ${assets.length}장은 추가하지 않았습니다.`);
+      return;
+    }
+    picking.current = true; setProcessing(true);
+    try {
+      for (const [index, asset] of assets.entries()) {
+        if (ediDraftStore.get().idempotencyKey !== current.idempotencyKey) break;
+        setProcessedCount(`${index + 1} / ${assets.length}`);
+        const photo = await processPhoto(asset, limits);
+        if (ediDraftStore.get().idempotencyKey === current.idempotencyKey && ediDraftStore.get().phase === 'editing') {
+          ediDraftStore.get().addPhotos([photo]);
+        } else releasePhotos([photo]);
+      }
+    } finally { picking.current = false; setProcessing(false); }
+  }
+
+  async function pick(camera = false) {
+    if (picking.current || locked || draft.photos.length >= maxPhotos) return;
+    try {
+      if (camera && Platform.OS !== 'web') {
+        const permission = await ImagePicker.requestCameraPermissionsAsync();
+        if (!permission.granted) { toast.warning('카메라 접근 권한이 필요합니다. 기기 설정에서 허용해 주세요.'); return; }
+      }
+      const result = camera
+        ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 1 })
+        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: true, orderedSelection: true, selectionLimit: maxPhotos - draft.photos.length, quality: 1 });
+      if (!result.canceled) await addAssets(result.assets);
+    } catch (error) { toast.error(getErrorMessage(error, '사진을 가져오지 못했습니다. 권한을 확인하거나 다시 선택해 주세요.')); }
+  }
+
+  function next() {
+    setAttempted(true);
+    if (draft.step === 1) {
+      if (Object.values(errors).some(Boolean) || !status.data?.enabled) return;
+      draft.setTargetYm(targetYm); draft.setStep(2); setAttempted(false);
+    } else if (draft.step === 2 && !processing && !blocker) { draft.setStep(3); setAttempted(false); }
+  }
+
+  function submit() {
+    if (!uncertain && (processing || blocker || Object.values(errors).some(Boolean) || !status.data?.enabled)) {
+      toast.warning(blocker || Object.values(errors).find(Boolean) || status.data?.message || '등록 정보를 다시 확인해 주세요.');
+      return;
+    }
+    if (!uncertain) draft.setTargetYm(targetYm);
+    void submitDraft();
+  }
+
+  if (draft.phase === 'done') return <Screen header={<AppHeader title="EDI 등록 완료" back backHref="/edi" />} scroll>
+    <Card><View style={styles.stack}>
+      <Badge label={draft.sample ? '샘플 등록' : '등록 완료'} tone={draft.sample ? 'warning' : 'success'} />
+      <Text variant="title">사진 {draft.result?.photoCount ?? draft.photos.length}장을 등록했습니다</Text>
+      <Text tone="secondary">{draft.sample ? '샘플 데이터입니다. 실제 서버에 저장되지 않았으며 앱을 다시 시작하면 사라집니다.' : '사진과 최종 순서가 서버에 저장되었습니다.'}</Text>
+      <Button title="등록 내역 확인" onPress={() => { if (draft.result) router.replace({ pathname: '/edi/[id]', params: { id: draft.result.id } }); }} />
+      <Button title="새 EDI 등록" variant="secondary" onPress={() => { releasePhotos(draft.reset()); setAttempted(false); }} />
+    </View></Card>
+  </Screen>;
+
+  return <Screen header={<AppHeader title="새 EDI 등록" back backHref="/edi" />} padded={false}>
+    <FormScroll footer={<View style={styles.stack}>
+      {draft.submit.notice && <Text tone="danger" accessibilityLiveRegion="polite">{draft.submit.notice.message}</Text>}
+      {active && <Text tone="primary" accessibilityLiveRegion="polite">{draft.submit.stage === 'creating' ? '최종 등록 결과 확인 중…' : `사진 업로드 ${summary.percent}% · ${summary.uploaded} / ${summary.total}장`}</Text>}
+      {processing && <Text tone="primary" accessibilityLiveRegion="polite">사진 준비 중 {processedCount}</Text>}
+      <View style={styles.row}>
+        {draft.step > 1 && <Button title="이전" variant="secondary" disabled={locked || processing} onPress={() => draft.setStep(draft.step === 3 ? 2 : 1)} />}
+        <View style={{ flex: 1 }}><Button fullWidth title={uncertain ? '등록 결과 다시 확인' : draft.step === 3 ? summary.failed ? '실패한 사진만 다시 시도' : `사진 ${draft.photos.length}장 등록하기` : '다음 단계'}
+          loading={active} disabled={processing || active || (!uncertain && (!status.data?.enabled || !months.data))}
+          onPress={draft.step === 3 || uncertain ? submit : next} /></View>
+      </View>
+    </View>}>
+      <View style={styles.stack}>
+        <View style={styles.row}>{['기본 정보', '사진 선택', '확인 및 등록'].map((label, i) => <View key={label} style={[styles.step, draft.step === i + 1 && styles.currentStep]}><Text variant="label" tone={draft.step === i + 1 ? 'primary' : 'muted'}>{i + 1}. {label}</Text></View>)}</View>
+        {(status.isPending || months.isPending) && <LoadingState label="등록 가능 여부 확인 중…" />}
+        {(status.isError || months.isError) && <ErrorState error={status.error || months.error} onRetry={() => { void status.refetch(); void months.refetch(); }} />}
+        {status.data && !status.data.enabled && <Card><Text tone="danger">{status.data.message || '현재 EDI 등록이 중지되어 있습니다.'}</Text></Card>}
+        {draft.step === 1 && <Card><View style={styles.stack}>
+          <Text variant="heading">어느 거래처의 EDI인가요?</Text>
+          <ClientPicker required value={draft.client} disabled={locked} error={attempted ? errors.client : null} onChange={(c) => draft.setClient({ idx: c.idx, name: c.name, selectable: c.selectableForEdi })} />
+          <Text variant="label">대상 연월 *</Text>
+          {months.data?.options.map((o) => <Button key={o.ym} title={`${targetYm === o.ym ? '✓ ' : ''}${o.display}`} variant={targetYm === o.ym ? 'soft' : 'secondary'} disabled={locked} onPress={() => draft.setTargetYm(o.ym)} />)}
+          {attempted && errors.targetYm && <Text tone="danger">{errors.targetYm}</Text>}
+          <TextField label="메모 (선택)" placeholder="전달할 내용을 입력하세요" multiline maxLength={limits.memoMaxLength} showCounter value={draft.memo} onChangeText={draft.setMemo} editable={!locked} />
+        </View></Card>}
+        {draft.step >= 2 && <>
+          {draft.step === 3 && <Card><View style={styles.stack}><Text variant="heading">등록 내용을 확인해 주세요</Text><Text>{draft.client?.name} · {targetYm}</Text>{!!draft.memo && <Text tone="secondary">{draft.memo}</Text>}<Text tone="secondary">아래 번호 순서대로 사진이 저장됩니다.</Text></View></Card>}
+          <Text variant="heading">선택한 사진 {draft.photos.length} / {maxPhotos}</Text>
+          {draft.step === 2 && <DropZone disabled={locked || processing} onAssets={addAssets}><View style={styles.stack}>
+            <Button title="앨범에서 사진 선택" icon="images-outline" onPress={() => void pick()} disabled={locked || processing || draft.photos.length >= maxPhotos} />
+            <Button title="카메라로 촬영" icon="camera-outline" variant="secondary" onPress={() => void pick(true)} disabled={locked || processing || draft.photos.length >= maxPhotos} />
+            <Text variant="caption" tone="secondary">JPG · PNG · WEBP · HEIC, 원본 50MB 이하. 사진을 길게 눌러 이동하거나 화살표로 순서를 바꿀 수 있습니다.</Text>
+          </View></DropZone>}
+          {attempted && blocker && <Text tone="danger">{blocker}</Text>}
+          <Sortable.Grid columns={2} data={draft.photos} keyExtractor={(p) => p.localId} sortEnabled={!locked && !processing && draft.step === 2} rowGap={12} columnGap={12}
+            onDragEnd={({ data }) => draft.reorderByKeys(data.map((p) => p.localId))}
+            renderItem={({ item: p }) => {
+              const index = draft.photos.findIndex((photo) => photo.localId === p.localId);
+              return <View style={styles.photo}>
+                <Pressable accessibilityRole="button" accessibilityLabel={`사진 ${index + 1} 확대`} disabled={!p.processed} onPress={() => setViewer(index)}>
+                  {p.processed ? <Image source={{ uri: p.processed.thumbUri }} style={styles.thumb} resizeMode="contain" /> : <View style={[styles.thumb, styles.invalid]}><Text tone="danger">처리 불가</Text></View>}
+                  <View style={styles.number}><Text tone="inverse" variant="label">{index + 1}</Text></View>
+                </Pressable>
+                <Text variant="caption" numberOfLines={1}>{p.sourceName}</Text>
+                <Text variant="caption" tone={p.state === 'invalid' || p.upload.state === 'failed' ? 'danger' : 'secondary'}>{p.invalidReason || p.upload.error || (p.upload.state === 'uploaded' ? '업로드 완료' : p.upload.state === 'uploading' ? `업로드 ${Math.round(p.upload.progress * 100)}%` : '등록 준비됨')}</Text>
+                {draft.step === 2 && <View style={styles.row}>
+                  <IconButton icon="arrow-back" accessibilityLabel={`사진 ${index + 1} 앞으로 이동`} disabled={locked || processing || index === 0} onPress={() => draft.movePhoto(p.localId, 'earlier')} />
+                  <IconButton icon="arrow-forward" accessibilityLabel={`사진 ${index + 1} 뒤로 이동`} disabled={locked || processing || index === draft.photos.length - 1} onPress={() => draft.movePhoto(p.localId, 'later')} />
+                  <IconButton icon="trash-outline" accessibilityLabel={`사진 ${index + 1} 삭제`} disabled={locked || processing} onPress={() => releasePhotos(draft.removePhotos([p.localId]))} />
+                </View>}
+              </View>;
+            }} />
+        </>}
+      </View>
+    </FormScroll>
+    {viewer !== null && <ImageViewerModal visible index={viewer} images={draft.photos.map((p) => ({ uri: p.processed?.uri ?? '', label: p.sourceName }))} onClose={() => setViewer(null)} />}
+  </Screen>;
+}
+
+const styles = StyleSheet.create({
+  stack: { gap: spacing.lg }, row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  step: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 3, borderBottomColor: colors.border },
+  currentStep: { borderBottomColor: colors.primary },
+  photo: { backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 8, gap: 6 },
+  thumb: { width: '100%', height: 150, backgroundColor: colors.bg, borderRadius: 8 },
+  invalid: { alignItems: 'center', justifyContent: 'center' },
+  number: { position: 'absolute', left: 6, top: 6, borderRadius: 16, minWidth: 28, height: 28, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary },
+});

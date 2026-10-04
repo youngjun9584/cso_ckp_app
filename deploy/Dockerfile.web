@@ -1,0 +1,14 @@
+FROM node:24-bookworm-slim AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+ARG PUBLIC_ORIGIN
+ENV EXPO_PUBLIC_API_BASE_URL=$PUBLIC_ORIGIN
+ENV EXPO_PUBLIC_API_MODE=live
+ENV EXPO_NO_DOTENV=1
+RUN node tools/check-release-env.mjs && npx expo export --platform web
+
+FROM caddy:2-alpine
+COPY --from=build /app/dist /srv
+EXPOSE 80 443
