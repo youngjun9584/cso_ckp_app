@@ -1,6 +1,6 @@
 /**
- * 로그인 — 앱처럼 보이는 아이콘 중심 화면.
- * 인사말·안내 문장은 두지 않는다. 계정 문의 안내는 도움말(?) 아이콘을 눌렀을 때만 보인다.
+ * 로그인 — 명확한 제목과 필드 라벨을 갖춘 업무 앱 화면.
+ * 계정 문의 안내는 도움말(?) 아이콘을 눌렀을 때 보인다.
  * 회원가입은 meta.features.selfRegistration 이 false 가 아니면 버튼으로 노출한다.
  */
 import { useRef, useState } from 'react';
@@ -82,7 +82,7 @@ function GradientButton({
       }}
     >
       <LinearGradient
-        colors={[colors.primary, '#0A8FCB', colors.teal]}
+        colors={[colors.primary, colors.primaryStrong]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradient}
@@ -158,7 +158,7 @@ export default function LoginScreen() {
         <LinearGradient colors={[colors.primarySoft, '#DDF3F0']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.badge}>
           <Icon name="person" size={30} color={colors.primary} />
         </LinearGradient>
-        <Text variant="heading" role="heading" style={styles.srOnlyHeading} {...webOnly({ 'aria-level': 1 })}>
+        <Text variant="titleLg" role="heading" {...webOnly({ 'aria-level': 1 })}>
           로그인
         </Text>
         <ModeBanner variant="pill" style={styles.modePill} />
@@ -173,6 +173,7 @@ export default function LoginScreen() {
       <View style={styles.fields}>
         <TextField
           accessibilityLabel="아이디"
+          label="아이디"
           placeholder="아이디"
           value={usrId}
           onChangeText={(t) => {
@@ -182,7 +183,7 @@ export default function LoginScreen() {
           error={fieldErrors.usrId}
           leftIcon="person-outline"
           leftIconColor={colors.primary}
-          shape="pill"
+          shape="default"
           containerStyle={styles.field}
           inputStyle={styles.input}
           autoCapitalize="none"
@@ -198,6 +199,7 @@ export default function LoginScreen() {
         <TextField
           ref={passwordRef}
           accessibilityLabel="비밀번호"
+          label="비밀번호"
           placeholder="비밀번호"
           value={password}
           onChangeText={(t) => {
@@ -207,7 +209,7 @@ export default function LoginScreen() {
           error={fieldErrors.password}
           leftIcon="lock-closed-outline"
           leftIconColor={colors.primary}
-          shape="pill"
+          shape="default"
           containerStyle={styles.field}
           inputStyle={styles.input}
           secureToggle
@@ -315,15 +317,15 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 400,
     backgroundColor: colors.card,
-    borderRadius: 28,
+    borderRadius: 20,
     padding: spacing.xl,
     paddingTop: spacing.xxl,
     gap: spacing.xl,
-    ...shadow.overlay,
+    ...shadow.card,
   },
   cardWide: {
-    maxWidth: 380,
-    padding: spacing.xxl,
+    maxWidth: 420,
+    padding: spacing.xxxl,
     paddingTop: spacing.xxxl,
     borderWidth: 1,
     borderColor: colors.border,
@@ -334,20 +336,11 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   badge: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0px 6px 18px rgba(8, 110, 175, 0.18)',
-  },
-  // 화면에는 보이지 않고 스크린리더만 읽는 제목 (아이콘이 제목 역할)
-  srOnlyHeading: {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    overflow: 'hidden',
-    opacity: 0,
   },
   modePill: {
     alignSelf: 'center',
@@ -366,9 +359,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   gradientWrap: {
-    borderRadius: radius.pill,
+    borderRadius: radius.control,
     overflow: 'hidden',
-    boxShadow: '0px 8px 20px rgba(8, 110, 175, 0.28)',
+    boxShadow: '0px 4px 10px rgba(36, 93, 219, 0.12)',
   },
   gradientHover: {
     boxShadow: '0px 10px 24px rgba(8, 110, 175, 0.36)',
@@ -385,7 +378,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   pillButton: {
-    borderRadius: radius.pill,
+    borderRadius: radius.control,
   },
   helpRow: {
     alignItems: 'center',

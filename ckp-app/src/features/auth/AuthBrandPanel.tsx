@@ -76,7 +76,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: spacing.lg,
     borderRadius: 999,
-    boxShadow: '0px 0px 60px rgba(25, 194, 180, 0.22)',
   },
   caption: {
     marginTop: spacing.lg,
@@ -85,7 +84,7 @@ const styles = StyleSheet.create({
   orb: {
     position: 'absolute',
     borderRadius: 999,
-    opacity: 0.35,
+    opacity: 0.12,
   },
   orbTeal: {
     width: 320,

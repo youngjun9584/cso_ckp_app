@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   barWide: {
-    minHeight: 84,
+    minHeight: 72,
   },
   row: {
     flexDirection: 'row',

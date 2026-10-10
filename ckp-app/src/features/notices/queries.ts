@@ -1,5 +1,7 @@
 /** 공지사항 조회 쿼리 (GET /v1/notices, /v1/notices/:idx) */
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
 
 import { getApi, type NoticeSummary } from '@/lib/api';
 
@@ -12,7 +14,7 @@ export const noticeKeys = {
 };
 
 export function useNoticeList(q: string) {
-  return useInfiniteQuery({
+  const query = useInfiniteQuery({
     queryKey: noticeKeys.list(q),
     initialPageParam: 1,
     queryFn: ({ pageParam, signal }) =>
@@ -20,6 +22,12 @@ export function useNoticeList(q: string) {
     getNextPageParam: (last) => (last.hasMore ? last.page + 1 : undefined),
     placeholderData: keepPreviousData,
   });
+  // Tabs remain mounted: opening the notices tab must also pick up newly published posts.
+  const { refetch } = query;
+  useFocusEffect(useCallback(() => {
+    void refetch({ cancelRefetch: false });
+  }, [refetch]));
+  return query;
 }
 
 export function flattenNotices(pages: readonly { items: NoticeSummary[] }[] | undefined): NoticeSummary[] {
@@ -38,9 +46,14 @@ export function flattenNotices(pages: readonly { items: NoticeSummary[] }[] | un
 
 /** idx 가 올바르지 않으면(null) 요청하지 않는다 */
 export function useNoticeDetail(idx: number | null) {
-  return useQuery({
+  const query = useQuery({
     queryKey: noticeKeys.detail(idx ?? 0),
     queryFn: ({ signal }) => getApi().getNotice(idx ?? 0, { signal }),
     enabled: idx !== null,
   });
+  const { refetch } = query;
+  useFocusEffect(useCallback(() => {
+    if (idx !== null) void refetch({ cancelRefetch: false });
+  }, [idx, refetch]));
+  return query;
 }

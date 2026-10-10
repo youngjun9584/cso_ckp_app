@@ -67,7 +67,7 @@ export function AppTabBar({ state, navigation, insets, wide }: AppTabBarProps) {
     return (
       <View style={[styles.sidebar, { paddingTop: insets.top + spacing.xxl, paddingBottom: insets.bottom + spacing.lg }]}>
         <View style={styles.sidebarLogo}>
-          <LogoFull height={76} />
+          <LogoFull height={56} />
           <Text variant="caption" tone="inverseMuted" style={{ marginTop: 16, letterSpacing: 2 }}>CKP · 업무 공간</Text>
         </View>
         <ModeBanner variant="sidebar" style={styles.sidebarMode} />
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   sidebarLogo: {
     alignItems: 'center',
     paddingTop: spacing.md,
-    paddingBottom: spacing.xxxl,
+    paddingBottom: spacing.xxl,
   },
   sidebarMode: {
     marginBottom: spacing.lg,
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.transparent,
   },
   sidebarAccentActive: {
-    backgroundColor: colors.teal,
+    backgroundColor: '#8BAEFF',
   },
   userBox: {
     borderTopWidth: StyleSheet.hairlineWidth,

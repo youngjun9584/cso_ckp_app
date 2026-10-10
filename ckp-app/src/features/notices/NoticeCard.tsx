@@ -14,16 +14,18 @@ export interface NoticeCardProps {
 
 export function NoticeCard({ item, onPress }: NoticeCardProps) {
   const date = formatDotDate(item.regYmd);
+  const title = item.title.trim() || '제목 없는 공지';
   const meta = [date, item.author?.trim()].filter(hasValue).join(' · ');
-  const a11y = [item.important ? '중요 공지' : null, item.title, date ? `작성일 ${date}` : null, item.author ? `작성자 ${item.author}` : null]
+  const a11y = [item.important ? '중요 공지' : null, title, date ? `작성일 ${date}` : null, item.author ? `작성자 ${item.author}` : null]
     .filter(hasValue)
     .join(', ');
 
   return (
     <Card onPress={() => onPress(item.idx)} accessibilityLabel={a11y} style={[styles.card, item.important && styles.important]}>
+      <View style={[styles.icon, item.important && styles.importantIcon]}><Icon name={item.important ? 'megaphone-outline' : 'document-text-outline'} size={21} color={item.important ? colors.accentText : colors.primary} /></View>
       <View style={styles.texts}>
         <Text variant="bodyStrong" numberOfLines={2}>
-          {item.title}
+          {title}
         </Text>
         <View style={styles.meta}>
           {item.important ? <Badge label="중요" tone="accent" icon="megaphone-outline" /> : null}
@@ -40,6 +42,8 @@ export function NoticeCard({ item, onPress }: NoticeCardProps) {
 }
 
 const styles = StyleSheet.create({
+  icon: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
+  importantIcon: { backgroundColor: colors.accentSoft },
   card: {
     flexDirection: 'row',
     alignItems: 'center',

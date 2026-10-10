@@ -91,6 +91,7 @@ interface SummaryRow {
   ingredient: string | null;
   pay: string | null;
   is_maker: string | null;
+  contrast_medicine: string | null;
   image_url: string | null;
   fee_value?: string | null;
 }
@@ -100,7 +101,6 @@ interface DetailRow extends SummaryRow {
   type2: string | null;
   medicine_class: string | null;
   welfare_code: string | null;
-  contrast_medicine: string | null;
   medicine_add: string | null;
   ee: string | null;
   medicine_is: string | null;
@@ -115,6 +115,7 @@ const SUMMARY_COLUMNS = [
   'ingredient::text AS ingredient',
   'pay::text AS pay',
   'is_maker::text AS is_maker',
+  'contrast_medicine::text AS contrast_medicine',
   'image_url::text AS image_url',
 ];
 
@@ -124,7 +125,6 @@ const DETAIL_COLUMNS = [
   'type2::text AS type2',
   'medicine_class::text AS medicine_class',
   'welfare_code::text AS welfare_code',
-  'contrast_medicine::text AS contrast_medicine',
   'medicine_add::text AS medicine_add',
   'ee::text AS ee',
   'medicine_is::text AS medicine_is',
@@ -149,6 +149,7 @@ function toSummary(row: SummaryRow, fee: FeeColumn | null): MedicineSummary {
     price: parsePrice(priceText),
     fee: fee && feeValue ? { label: fee.label, value: feeValue } : null,
     inHouse: textOrNull(row.is_maker)?.toUpperCase() === 'O',
+    contrastMedicine: textOrNull(row.contrast_medicine),
     imageUrl: httpsUrlOrNull(row.image_url),
   };
 }
@@ -160,7 +161,6 @@ function toDetail(row: DetailRow, fee: FeeColumn | null): MedicineDetail {
     type2: textOrNull(row.type2),
     medicineClass: textOrNull(row.medicine_class),
     welfareCode: textOrNull(row.welfare_code),
-    contrastMedicine: textOrNull(row.contrast_medicine),
     additives: textOrNull(row.medicine_add),
     note: textOrNull(row.ee),
     settlement: textOrNull(row.medicine_is),

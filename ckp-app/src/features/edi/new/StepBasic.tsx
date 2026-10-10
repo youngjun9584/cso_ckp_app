@@ -1,5 +1,5 @@
 /**
- * 1단계 기본 정보: 거래처(내 거래처, 선택 불가 항목은 흐리게) · 대상 연월(month-options, 기본 당월) · 메모(500자).
+ * 1단계 기본 정보: 거래처(내 거래처, 선택 불가 항목은 흐리게) · 대상 연월(month-options, 기본 당월). 메모 입력란은 제거됨(memo 는 항상 빈 문자열).
  * EDI 가 관리자에 의해 막혀 있으면 경고를 보여주고 다음 단계로 갈 수 없다.
  */
 import { useState } from 'react';
@@ -7,7 +7,7 @@ import { StyleSheet } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useShallow } from 'zustand/react/shallow';
 
-import { Button, Card, ErrorState, SectionTitle, Text, TextField } from '@/components/ui';
+import { Button, Card, ErrorState, SectionTitle, Text } from '@/components/ui';
 import { ClientPicker } from '@/features/clients';
 import { getApi } from '@/lib/api';
 import { useLimits } from '@/lib/auth';
@@ -22,7 +22,7 @@ import { StepScaffold } from './StepScaffold';
 
 export function StepBasic() {
   const limits = useLimits();
-  const { client, memo, targetYm, phase, notice, setClient, setMemo, setTargetYm, setStep, setSubmit } = useEdiDraft(
+  const { client, memo, targetYm, phase, notice, setClient, setTargetYm, setStep, setSubmit } = useEdiDraft(
     useShallow((s) => ({
       client: s.client,
       memo: s.memo,
@@ -30,7 +30,6 @@ export function StepBasic() {
       phase: s.phase,
       notice: s.submit.notice,
       setClient: s.setClient,
-      setMemo: s.setMemo,
       setTargetYm: s.setTargetYm,
       setStep: s.setStep,
       setSubmit: s.setSubmit,
@@ -144,22 +143,6 @@ export function StepBasic() {
           </Text>
         ) : null}
       </Card>
-
-      <Card style={styles.card}>
-        <TextField
-          label="메모 (선택)"
-          placeholder="전달할 내용이 있으면 입력하세요"
-          helper="메모는 등록 내역에서 확인할 수 있습니다."
-          multiline
-          maxLength={limits.memoMaxLength}
-          showCounter
-          value={memo}
-          onChangeText={setMemo}
-          editable={!locked}
-          error={attempted ? errors.memo : null}
-          inputStyle={styles.memo}
-        />
-      </Card>
     </StepScaffold>
   );
 }
@@ -170,9 +153,5 @@ const styles = StyleSheet.create({
   },
   card: {
     gap: spacing.md,
-  },
-  memo: {
-    minHeight: 96,
-    textAlignVertical: 'top',
   },
 });

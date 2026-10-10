@@ -25,7 +25,7 @@ import { getApi, type MedicineDetail } from '@/lib/api';
 import { useFeatures } from '@/lib/auth';
 import { hasValue } from '@/lib/format';
 import { colors, radius, spacing, useIsWide } from '@/theme';
-import { formatDotDate, medicinePrice, settlementLabel } from './format';
+import { FEE_LABEL, formatDotDate, medicinePrice, settlementLabel } from './format';
 import { isNotFoundError, useMedicineDetail } from './queries';
 
 const MAX_WIDTH = 880;
@@ -98,7 +98,7 @@ export function MedicineDetailBody({ medicine, showFee }: { medicine: MedicineDe
   const settlement = settlementLabel(medicine.settlement);
   const metrics: Metric[] = [];
   if (price) metrics.push({ label: '약가', value: price, tone: 'primary' });
-  if (fee && hasValue(fee.value)) metrics.push({ label: fee.label || '수수료', value: fee.value, tone: 'accent' });
+  if (fee && hasValue(fee.value)) metrics.push({ label: FEE_LABEL, value: fee.value, tone: 'accent' });
   if (settlement) {
     const tone = medicine.settlement?.trim().toUpperCase() === 'Y' ? 'success' : 'neutral';
     metrics.push({ label: '정산 여부', value: settlement, tone });

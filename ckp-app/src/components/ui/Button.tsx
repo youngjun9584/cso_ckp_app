@@ -2,11 +2,11 @@ import {
   ActivityIndicator,
   Pressable,
   StyleSheet,
-  View,
   type PressableProps,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import Animated, { ReduceMotion, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { colors, controlHeight, radius, spacing } from '@/theme';
 import { Icon, type IconName } from './Icon';
@@ -66,16 +66,29 @@ export function Button({
   style,
   accessibilityLabel,
   hitSlop,
+  onPressIn,
+  onPressOut,
   ...rest
 }: ButtonProps) {
   const v = VARIANTS[variant];
   const inactive = disabled || loading;
   const textColor = disabled ? colors.textMuted : v.text;
   const iconSize = size === 'sm' ? 18 : 20;
+  const reduceMotion = useReducedMotion();
+  const scale = useSharedValue(1);
+  const feedbackStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
 
   return (
     <Pressable
       {...rest}
+      onPressIn={(event) => {
+        scale.set(withTiming(reduceMotion ? 1 : 0.96, { duration: 100, reduceMotion: ReduceMotion.System }));
+        onPressIn?.(event);
+      }}
+      onPressOut={(event) => {
+        scale.set(withTiming(1, { duration: 160, reduceMotion: ReduceMotion.System }));
+        onPressOut?.(event);
+      }}
       disabled={inactive}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? title}
@@ -105,7 +118,7 @@ export function Button({
         ];
       }}
     >
-      <View style={styles.content}>
+      <Animated.View style={[styles.content, feedbackStyle]}>
         {loading ? (
           <ActivityIndicator size="small" color={textColor} />
         ) : icon ? (
@@ -115,7 +128,7 @@ export function Button({
           {title}
         </Text>
         {iconRight && !loading ? <Icon name={iconRight} size={iconSize} color={textColor} /> : null}
-      </View>
+      </Animated.View>
     </Pressable>
   );
 }

@@ -201,6 +201,8 @@ export interface MedicineSummary {
   fee: { label: string; value: string } | null;
   /** 자사생산 (medicine.is_maker === 'O') */
   inHouse: boolean;
+  /** 대조의약품 (medicine.contrast_medicine) */
+  contrastMedicine: string | null;
   /** 제품 이미지 URL (https 만) */
   imageUrl: string | null;
 }
@@ -213,7 +215,6 @@ export interface MedicineDetail extends MedicineSummary {
   type2: string | null; // 급여 구분 등
   medicineClass: string | null; // 복지부 분류
   welfareCode: string | null; // 복지부코드
-  contrastMedicine: string | null; // 대조의약품
   additives: string | null; // 첨가제 medicine_add
   note: string | null; // 비고 ee
   /** 정산여부 medicine_is: 'Y' | 'N' | 기타 원문 */

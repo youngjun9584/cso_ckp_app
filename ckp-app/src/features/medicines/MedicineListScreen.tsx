@@ -2,10 +2,11 @@
  * 의약품 목록·검색 (앱 첫 화면, DESIGN §6.5)
  * - 검색어: 입력 멈춤 350ms 후 또는 검색 키로 검색, 검색 기준(의약품명·제약사·보험코드·전체)
  * - 무한 스크롤(30건씩), '총 N건'
- * - 모바일: 카드 목록 / 넓은 웹: 고정 머리글 표
+ * - 보기 방식: 카드 / 표 (사용자 선택, 기기에 저장). 고르지 않았으면 모바일 = 카드, 넓은 웹 = 표
+ * - 좁은 화면에서 표를 고르면 가로로 스크롤해서 본다
  */
-import { useRef, useState } from 'react';
-import { FlatList, Platform, RefreshControl, StyleSheet, View } from 'react-native';
+import { useRef, useState, type ReactNode } from 'react';
+import { FlatList, Platform, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 
 import {
@@ -30,6 +31,7 @@ import { ListFooter } from './ListFooter';
 import { MedicineCard } from './MedicineCard';
 import { MedicineTableHeader, MedicineTableRow } from './MedicineTable';
 import { flattenMedicines, useMedicineList } from './queries';
+import { VIEW_MODE_OPTIONS, useMedicineViewMode } from './viewMode';
 
 function CardSeparator() {
   return <View style={styles.separator} />;
@@ -39,6 +41,10 @@ export function MedicineListScreen() {
   const { wide, contentStyle } = useContentLayout();
   const showFee = useFeatures().medicineFeeVisible;
   const listRef = useRef<FlatList<MedicineSummary>>(null);
+  const storedMode = useMedicineViewMode((s) => s.mode);
+  const setViewMode = useMedicineViewMode((s) => s.setMode);
+  const viewMode = storedMode ?? (wide ? 'table' : 'card');
+  const tableView = viewMode === 'table';
 
   const [input, setInput] = useState('');
   const [query, setQuery] = useState('');
@@ -134,20 +140,44 @@ export function MedicineListScreen() {
     />
   );
 
+  const viewControl = (
+    <SegmentedControl
+      options={VIEW_MODE_OPTIONS}
+      value={viewMode}
+      onChange={setViewMode}
+      accessibilityLabel="보기 방식"
+      fullWidth={false}
+    />
+  );
+
   const toolbar = wide ? (
     <View style={[contentStyle, styles.toolbarWide]}>
       {search}
       {fieldControl}
       <View style={styles.flex} />
       {countLine}
+      {viewControl}
     </View>
   ) : (
     <View style={[contentStyle, styles.toolbar]}>
       {search}
       {fieldControl}
-      {countLine}
+      <View style={styles.metaRow}>
+        {countLine}
+        {viewControl}
+      </View>
     </View>
   );
+
+  /** 좁은 화면의 표는 가로 스크롤 안에 고정 너비로 그린다 */
+  function tableFrame(table: ReactNode) {
+    if (wide) return <View style={[contentStyle, styles.tableArea]}>{table}</View>;
+    return (
+      <ScrollView horizontal showsHorizontalScrollIndicator style={styles.flex} contentContainerStyle={styles.tableScroll}>
+        <View style={[styles.tableArea, styles.tableNarrowColumn]}>{table}</View>
+      </ScrollView>
+    );
+  }
 
   const footer = (
     <ListFooter
@@ -163,8 +193,8 @@ export function MedicineListScreen() {
 
   let body;
   if (list.isPending || (list.isPlaceholderData && items.length === 0)) {
-    body = wide ? (
-      <View style={[contentStyle, styles.tableArea]}>
+    body = tableView ? (
+      tableFrame(
         <View
           style={styles.table}
           accessibilityRole="progressbar"
@@ -175,8 +205,8 @@ export function MedicineListScreen() {
           <View style={styles.tableSkeleton}>
             <SkeletonRows count={8} variant="row" />
           </View>
-        </View>
-      </View>
+        </View>,
+      )
     ) : (
       <View style={[contentStyle, styles.stateArea]}>
         <LoadingState variant="skeleton" rows={6} label="의약품 목록을 불러오는 중입니다" />
@@ -207,23 +237,21 @@ export function MedicineListScreen() {
         )}
       </View>
     );
-  } else if (wide) {
-    body = (
-      <View style={[contentStyle, styles.tableArea]}>
-        <View style={[styles.table, searching && styles.dimmed]}>
-          <MedicineTableHeader showFee={showFee} />
-          <FlatList
-            ref={listRef}
-            data={items}
-            keyExtractor={(m) => m.code}
-            renderItem={({ item }) => <MedicineTableRow item={item} showFee={showFee} onPress={openDetail} />}
-            onEndReached={loadMore}
-            onEndReachedThreshold={0.6}
-            ListFooterComponent={footer}
-            style={styles.tableList}
-          />
-        </View>
-      </View>
+  } else if (tableView) {
+    body = tableFrame(
+      <View style={[styles.table, searching && styles.dimmed]}>
+        <MedicineTableHeader showFee={showFee} />
+        <FlatList
+          ref={listRef}
+          data={items}
+          keyExtractor={(m) => m.code}
+          renderItem={({ item }) => <MedicineTableRow item={item} showFee={showFee} onPress={openDetail} />}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.6}
+          ListFooterComponent={footer}
+          style={styles.tableList}
+        />
+      </View>,
     );
   } else {
     body = (
@@ -281,6 +309,12 @@ const styles = StyleSheet.create({
     minHeight: 20,
     justifyContent: 'center',
   },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
   stateArea: {
     paddingTop: spacing.sm,
   },
@@ -294,6 +328,14 @@ const styles = StyleSheet.create({
   tableArea: {
     flex: 1,
     paddingBottom: spacing.xxl,
+  },
+  tableScroll: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+  },
+  tableNarrowColumn: {
+    // 좁은 화면: 열이 잘리지 않도록 고정 너비, 세로는 남은 높이 안에서 표가 스크롤
+    width: 760,
   },
   table: {
     // 행이 적으면 내용 높이만큼, 많으면 남은 높이 안에서 스크롤

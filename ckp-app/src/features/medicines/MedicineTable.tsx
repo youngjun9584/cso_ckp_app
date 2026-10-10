@@ -8,15 +8,16 @@ import { colors, spacing } from '@/theme';
 import { medicineA11yLabel, medicinePrice } from './format';
 
 interface Column {
-  key: 'name' | 'company' | 'packing' | 'code' | 'price' | 'fee';
+  key: 'contrast' | 'name' | 'company' | 'packing' | 'code' | 'price' | 'fee';
   label: string;
   style: StyleProp<ViewStyle>;
   align?: 'right';
 }
 
 const COLUMNS: Column[] = [
-  { key: 'name', label: '제품명', style: { flex: 2.4, minWidth: 0 } },
+  { key: 'contrast', label: '대조의약품', style: { flex: 1.8, minWidth: 0 } },
   { key: 'company', label: '제약사', style: { flex: 1.3, minWidth: 0 } },
+  { key: 'name', label: '제품명', style: { flex: 2.4, minWidth: 0 } },
   { key: 'packing', label: '포장·규격', style: { flex: 1.3, minWidth: 0 } },
   { key: 'code', label: '보험코드', style: { width: 104 } },
   { key: 'price', label: '약가', style: { width: 96 }, align: 'right' },
@@ -60,6 +61,14 @@ export function MedicineTableRow({ item, showFee, onPress }: MedicineTableRowPro
 
   function renderCell(col: Column) {
     switch (col.key) {
+      case 'contrast':
+        return item.contrastMedicine ? (
+          <Text variant="secondary" numberOfLines={2}>
+            {item.contrastMedicine}
+          </Text>
+        ) : (
+          <Empty />
+        );
       case 'name':
         return (
           <View style={styles.nameCell}>

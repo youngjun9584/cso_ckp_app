@@ -7,6 +7,8 @@ import { router } from 'expo-router';
 
 import {
   AppHeader,
+  Button,
+  Icon,
   EmptyState,
   ErrorState,
   LoadingState,
@@ -78,6 +80,8 @@ export function NoticeListScreen() {
         value={input}
         onChangeText={setInput}
         onSubmit={commit}
+        onDebouncedChange={commit}
+        maxLength={100}
         placeholder="공지 제목으로 검색"
         accessibilityLabel="공지사항 제목 검색"
         loading={searching}
@@ -120,7 +124,7 @@ export function NoticeListScreen() {
         {query ? (
           <NoResults query={query} description="제목에 들어 있는 다른 낱말로 다시 검색해 보세요." onClear={clearSearch} />
         ) : (
-          <EmptyState icon="megaphone-outline" title="등록된 공지사항이 없습니다." description="새 공지가 등록되면 이곳에 표시됩니다." />
+          <EmptyState icon="megaphone-outline" title="등록된 공지사항이 없습니다." description="새 공지가 등록되면 이곳에 표시됩니다." actionLabel="새로고침" actionIcon="refresh-outline" onAction={() => void refresh()} />
         )}
       </View>
     );
@@ -157,14 +161,21 @@ export function NoticeListScreen() {
   }
 
   return (
-    <Screen header={<AppHeader title="공지사항" maxWidth={MAX_WIDTH} />} padded={false} maxWidth={null}>
+    <Screen header={<AppHeader title="공지사항" subtitle="새로운 소식과 업무 안내" maxWidth={MAX_WIDTH} right={<Button title="새로고침" icon="refresh-outline" size="sm" variant="ghost" loading={list.isFetching && !list.isFetchingNextPage} onPress={() => void refresh()} />} />} padded={false} maxWidth={null}>
+      <View style={[contentStyle, styles.intro]}>
+        <View style={styles.introIcon}><Icon name="megaphone-outline" size={23} color={colors.primary} /></View>
+        <View style={styles.flex}><Text variant="heading">업무 소식을 확인하세요</Text><Text variant="secondary" tone="secondary">중요 공지는 목록 상단에 표시됩니다.</Text></View>
+      </View>
       {toolbar}
+      {list.isRefetchError && list.data ? <View style={contentStyle}><ErrorState compact title="최신 공지를 불러오지 못했습니다" message="이전에 불러온 내용입니다. 새로고침해 주세요." onRetry={() => void refresh()} retrying={list.isFetching} /></View> : null}
       {body}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  intro: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 24, paddingBottom: 12 },
+  introIcon: { width: 46, height: 46, borderRadius: 14, backgroundColor: colors.primarySoft, justifyContent: 'center', alignItems: 'center' },
   flex: {
     flex: 1,
   },

@@ -5,7 +5,8 @@ import { Badge, Card, Text } from '@/components/ui';
 import type { MedicineSummary } from '@/lib/api';
 import { hasValue } from '@/lib/format';
 import { colors, spacing } from '@/theme';
-import { medicineA11yLabel, medicinePrice } from './format';
+import { FEE_LABEL, medicineA11yLabel, medicinePrice } from './format';
+import { MedicineThumb } from './MedicineThumb';
 
 export interface MedicineCardProps {
   item: MedicineSummary;
@@ -21,16 +22,21 @@ export function MedicineCard({ item, showFee, onPress }: MedicineCardProps) {
   return (
     <Card onPress={() => onPress(item.code)} accessibilityLabel={medicineA11yLabel(item, showFee)} style={styles.card}>
       <View style={styles.top}>
-        <Text variant="bodyStrong" numberOfLines={2} style={styles.name}>
-          {item.name}
-        </Text>
-        {item.inHouse ? <Badge label="자사생산" tone="teal" /> : null}
+        <MedicineThumb imageUrl={item.imageUrl} size={56} />
+        <View style={styles.titleArea}>
+          <View style={styles.titleRow}>
+            <Text variant="bodyStrong" numberOfLines={2} style={styles.name}>
+              {item.name}
+            </Text>
+            {item.inHouse ? <Badge label="자사생산" tone="teal" /> : null}
+          </View>
+          {sub ? (
+            <Text variant="secondary" tone="secondary" numberOfLines={2}>
+              {sub}
+            </Text>
+          ) : null}
+        </View>
       </View>
-      {sub ? (
-        <Text variant="secondary" tone="secondary" numberOfLines={2}>
-          {sub}
-        </Text>
-      ) : null}
       <View style={styles.bottom}>
         <Text variant="caption" tone="muted" style={styles.code}>
           보험코드 {item.code}
@@ -48,7 +54,7 @@ export function MedicineCard({ item, showFee, onPress }: MedicineCardProps) {
         {fee ? (
           <View style={styles.metric}>
             <Text variant="caption" tone="muted">
-              {fee.label}
+              {FEE_LABEL}
             </Text>
             <Text variant="bodyStrong" tone="accent">
               {fee.value}
@@ -65,6 +71,15 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   top: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  titleArea: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.sm,

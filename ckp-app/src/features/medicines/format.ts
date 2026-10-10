@@ -19,6 +19,9 @@ export function fieldLabel(field: MedicineSearchField): string {
   return SEARCH_FIELD_OPTIONS.find((o) => o.value === field)?.label ?? '';
 }
 
+/** 수수료 표시 라벨 — 서버가 주는 frees 이름(예: 'Total') 대신 항상 '수수료' 로 보여 준다 */
+export const FEE_LABEL = '수수료';
+
 /** 약가 표시 ('12,345원' / '미정' / '') */
 export function medicinePrice(item: Pick<MedicineSummary, 'price' | 'priceText'>): string {
   return formatPrice(item.price, item.priceText);
@@ -50,7 +53,7 @@ export function medicineA11yLabel(item: MedicineSummary, showFee: boolean): stri
     item.packing,
     `보험코드 ${item.code}`,
     price ? `약가 ${price}` : null,
-    showFee && item.fee ? `${item.fee.label} ${item.fee.value}` : null,
+    showFee && item.fee ? `${FEE_LABEL} ${item.fee.value}` : null,
   ]
     .filter((v): v is string => hasValue(v))
     .join(', ');

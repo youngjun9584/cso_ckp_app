@@ -1,18 +1,31 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, type ReactNode } from 'react';
+import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useNavigation } from 'expo-router';
+import Animated, { ReduceMotion, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import { openTabRoot, openTabScreen, type TabsNavigation } from '@/components/shell/tab-navigation';
 import { APP_TABS, type AppTabName } from '@/components/shell/tabs';
 import { AppHeader, Button, Icon, Screen, Text } from '@/components/ui';
 import { asInteraction } from '@/components/ui/pressable-state';
 import { useAuth } from '@/lib/auth';
-import { colors, focusRing, radius, shadow, spacing, useIsWide } from '@/theme';
+import { colors, focusRing, radius, useIsWide } from '@/theme';
 
-const SHORTCUTS: { tab: AppTabName; description: string; number: string; color: string; bg: string }[] = [
-  { tab: 'medicines', description: '필요한 의약품을 빠르게 검색하세요', number: '01', color: colors.primary, bg: colors.primarySoft },
-  { tab: 'notices', description: '새로운 소식과 안내를 확인하세요', number: '02', color: '#947016', bg: '#FBF4E3' },
-  { tab: 'edi', description: '사진 등록부터 제출 내역까지', number: '03', color: '#157E73', bg: colors.tealSoft },
-  { tab: 'clients', description: '함께하는 거래처를 관리하세요', number: '04', color: '#6554A4', bg: '#F1EEF9' },
+const SHORTCUTS: { tab: AppTabName; description: string; color: string; background: string }[] = [
+  { tab: 'edi', description: '제출·처리 내역', color: '#087D73', background: '#E5F5F1' },
+  { tab: 'medicines', description: '제품·수수료 조회', color: colors.primary, background: colors.primarySoft },
+  { tab: 'clients', description: '거래처 조회·등록', color: '#7054AC', background: '#F1EDFA' },
+  { tab: 'notices', description: '주요 공지 확인', color: '#996118', background: '#FFF4E2' },
 ];
+
+// A short, one-time entrance; respect the device's reduced-motion preference.
+function Reveal({ children, delay = 0, style }: { children: ReactNode; delay?: number; style?: StyleProp<ViewStyle> }) {
+  const reduced = useReducedMotion();
+  const progress = useSharedValue(reduced ? 1 : 0);
+  useEffect(() => {
+    progress.set(withDelay(reduced ? 0 : delay, withTiming(1, { duration: 280, reduceMotion: ReduceMotion.System })));
+  }, [delay, progress, reduced]);
+  const motion = useAnimatedStyle(() => ({ opacity: progress.get(), transform: [{ translateY: (1 - progress.get()) * 10 }] }));
+  return <Animated.View style={[style, motion]}>{children}</Animated.View>;
+}
 
 export function HomeScreen() {
   const { user } = useAuth();
@@ -20,72 +33,74 @@ export function HomeScreen() {
   const navigation = useNavigation();
   const tabs = () => navigation.getParent<TabsNavigation | undefined>();
   const openNewEdi = () => void openTabScreen(tabs(), 'edi', 'new', '/edi/new', { ignore: ['edi-new-draft'] });
+  const open = (name: AppTabName) => void openTabRoot(tabs(), APP_TABS.find((tab) => tab.name === name)!);
 
   return <Screen header={<AppHeader title="홈" subtitle="CKP 업무 공간" />} scroll>
     <View style={styles.greeting}>
-      <Text variant="caption" tone="primary" weight="bold" style={styles.eyebrow}>오늘의 업무</Text>
-      <Text variant="titleLg" role="heading">{user?.name?.trim() ? `${user.name.trim()}님, 안녕하세요.` : '안녕하세요.'}</Text>
-      <Text tone="secondary">필요한 업무를 한곳에서, 더 간편하게.</Text>
+      <View style={styles.eyebrow}><Icon name="sunny-outline" size={17} color={colors.primary} /><Text variant="label" tone="secondary">나의 업무 공간</Text></View>
+      <Text variant="titleLg" role="heading" style={styles.title}>{user?.name?.trim() ? user.name.trim() + '님, 안녕하세요' : '안녕하세요'}</Text>
+      <Text variant="secondary" tone="secondary">오늘 필요한 업무를 빠르게 시작하세요.</Text>
     </View>
-
-    <View style={[styles.hero, wide && styles.heroWide]}>
-      <View pointerEvents="none" style={styles.orbit} />
-      <View pointerEvents="none" style={styles.orbitInner} />
-      <View style={styles.heroContent}>
-        <View style={styles.heroBadge}><View style={styles.dot} /><Text variant="caption" color="#9AE6D8" weight="bold">EDI 사진 등록</Text></View>
-        <Text role="heading" variant="titleLg" tone="inverse" style={wide ? styles.heroTitleWide : undefined}>사진으로 간편하게,{ '\n' }순서대로 정확하게.</Text>
-        <Text variant="secondary" tone="inverseMuted">거래처 선택부터 사진 제출까지 3단계.{ '\n' }한 번에 최대 30장을 등록할 수 있어요.</Text>
-        <Button title="새 EDI 등록" iconRight="arrow-forward" onPress={openNewEdi} size="lg" style={styles.heroButton} />
+    <Reveal style={[styles.ediCard, wide && styles.ediCardWide]}>
+      <View style={styles.flex}>
+        <View style={styles.ediLabel}><View style={styles.ediIcon}><Icon name="cloud-upload-outline" size={25} color={colors.white} /></View><Text variant="label" tone="inverseMuted">EDI 사진 등록</Text></View>
+        <Text variant="title" tone="inverse" role="heading" style={styles.ediTitle}>사진을 선택하고, 간편하게 제출하세요</Text>
+        <Text variant="secondary" tone="inverseMuted">거래처 선택부터 제출까지 3단계 · 최대 30장</Text>
       </View>
-      {wide && <View style={styles.photoIllustration} accessible={false} pointerEvents="none" importantForAccessibility="no-hide-descendants" aria-hidden>
-        <View style={[styles.mockPhoto, styles.mockBack]}><View style={styles.mockNumber}><Text variant="label" tone="primary">02</Text></View><Icon name="images-outline" size={42} color="#8FA6B9" /></View>
-        <View style={[styles.mockPhoto, styles.mockFront]}><View style={styles.mockNumber}><Text variant="label" tone="primary">01</Text></View><Icon name="document-text-outline" size={52} color={colors.primary} /><View style={styles.mockLine} /><View style={[styles.mockLine, { width: '45%' }]} /></View>
-        <View style={styles.photoCaption}><Icon name="checkmark-circle" size={18} color="#8BE1CD" /><Text variant="caption" tone="inverse">선택 · 순서 확인 · 등록</Text></View>
-      </View>}
-    </View>
+      <Button title="새 EDI 등록" icon="add" iconRight="arrow-forward" onPress={openNewEdi} style={[styles.ediButton, !wide && styles.ediButtonMobile]} />
+    </Reveal>
 
-    <View style={styles.sectionHeader}><Text variant="heading" role="heading">업무 바로가기</Text><Text variant="caption" tone="secondary">필요한 기능만 간결하게</Text></View>
-    <View style={[styles.grid, wide && styles.gridWide]}>
-      {SHORTCUTS.map((item) => {
+    <Pressable accessibilityRole="button" accessibilityLabel="의약품 검색 열기" onPress={() => open('medicines')}
+      style={(state) => [styles.search, asInteraction(state).focused && focusRing, asInteraction(state).pressed && styles.pressed]}>
+      <Icon name="search-outline" size={22} color={colors.primary} />
+      <Text tone="secondary" style={styles.flex}>어떤 의약품을 찾으세요?</Text>
+      <Icon name="chevron-forward" size={18} color={colors.textMuted} />
+    </Pressable>
+
+    <View style={styles.sectionHeader}><Text variant="heading" role="heading">자주 쓰는 업무</Text><Text variant="caption" tone="secondary">QUICK ACCESS</Text></View>
+    <View style={styles.grid}>
+      {SHORTCUTS.map((item, index) => {
         const tab = APP_TABS.find((t) => t.name === item.tab)!;
-        return <View key={item.tab} style={{ width: wide ? '25%' : '50%', padding: 6 }}><Pressable
-          accessibilityRole="button" accessibilityLabel={`${tab.label}, ${item.description}`}
-          onPress={() => void openTabRoot(tabs(), tab)}
-          style={(state) => { const { pressed, hovered, focused } = asInteraction(state); return [styles.tile, wide && styles.tileWide, (hovered || pressed) && styles.tileHover, focused && focusRing]; }}>
-          <View style={styles.tileTop}><View style={[styles.chip, { backgroundColor: item.bg }]}><Icon name={tab.icon} size={25} color={item.color} /></View><Text variant="caption" tone="muted">{item.number}</Text></View>
-          <View style={styles.tileText}><Text variant="heading">{tab.label}</Text><Text variant="secondary" tone="secondary">{item.description}</Text></View>
-          <View style={styles.tileBottom}><Text variant="caption" tone="primary" weight="semibold">바로가기</Text><Icon name="arrow-forward" size={17} color={colors.primary} /></View>
-        </Pressable></View>;
+        return <Reveal delay={70 + index * 45} key={item.tab} style={{ width: wide ? '25%' : '50%', padding: 5 }}>
+          <Pressable accessibilityRole="button" accessibilityLabel={tab.label + ', ' + item.description} onPress={() => open(item.tab)}
+            style={(state) => { const { pressed, hovered, focused } = asInteraction(state); return [styles.tile, (hovered || pressed) && styles.tileHover, focused && focusRing]; }}>
+            <View style={styles.tileTop}><View style={[styles.chip, { backgroundColor: item.background }]}><Icon name={tab.icon} size={25} color={item.color} /></View><Icon name="chevron-forward" size={16} color={colors.textMuted} /></View>
+            <Text variant="bodyStrong">{tab.label}</Text>
+            <Text variant="caption" tone="secondary">{item.description}</Text>
+          </Pressable>
+        </Reveal>;
       })}
     </View>
-    <View style={styles.footnote}><Icon name="images-outline" size={18} color={colors.textSecondary} /><Text variant="caption" tone="secondary" style={{ flexShrink: 1 }}>EDI 사진은 선택 후 순서를 바꾸고, 크게 확인한 뒤 제출할 수 있습니다.</Text></View>
+
+    <View style={styles.sectionHeader}><Text variant="heading" role="heading">업무 안내</Text></View>
+    <View style={styles.guide}>
+      <View style={styles.guideIcon}><Icon name="images-outline" size={22} color={colors.primary} /></View>
+      <View style={styles.flex}><Text variant="bodyStrong">제출 전, 사진을 확인해 주세요</Text><Text variant="secondary" tone="secondary" style={styles.guideDescription}>사진을 크게 확인하고 순서를 바꾼 뒤 제출할 수 있습니다.</Text></View>
+    </View>
   </Screen>;
 }
 
 const styles = StyleSheet.create({
-  greeting: { gap: 6, marginBottom: 24 }, eyebrow: { letterSpacing: 1.5 },
-  hero: { position: 'relative', overflow: 'hidden', backgroundColor: colors.navy, borderRadius: 24, padding: 24, marginBottom: 32 },
-  heroWide: { flexDirection: 'row', alignItems: 'center', minHeight: 294, padding: 36 },
-  heroContent: { flex: 1, gap: 16, zIndex: 1 },
-  heroTitleWide: { fontSize: 32, lineHeight: 44, letterSpacing: -0.8 },
-  heroBadge: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start' },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.teal },
-  heroButton: { alignSelf: 'flex-start', minWidth: 174, backgroundColor: '#0875AD', borderColor: '#4394BB', marginTop: 4 },
-  orbit: { position: 'absolute', width: 440, height: 440, borderRadius: 220, borderWidth: 1, borderColor: 'rgba(130,213,219,0.12)', right: -100, top: -90 },
-  orbitInner: { position: 'absolute', width: 330, height: 330, borderRadius: 165, borderWidth: 1, borderColor: 'rgba(130,213,219,0.10)', right: -45, top: -35 },
-  photoIllustration: { width: 270, height: 240, marginLeft: 20 },
-  mockPhoto: { position: 'absolute', width: 142, height: 174, borderRadius: 16, alignItems: 'center', justifyContent: 'center', gap: 12, ...shadow.raised },
-  mockBack: { right: 16, top: 13, backgroundColor: '#D4E4EC', transform: [{ rotate: '12deg' }] },
-  mockFront: { left: 22, top: 35, backgroundColor: '#FFFFFF', transform: [{ rotate: '-9deg' }] },
-  mockNumber: { position: 'absolute', left: 12, top: 10 },
-  mockLine: { height: 4, width: '65%', borderRadius: 2, backgroundColor: '#DCE7EE' },
-  photoCaption: { position: 'absolute', right: 12, bottom: 0, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  flex: { flex: 1, minWidth: 0 },
+  greeting: { gap: 6, marginBottom: 24 },
+  eyebrow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  ediIcon: { width: 44, height: 44, borderRadius: 13, backgroundColor: '#2B4568', alignItems: 'center', justifyContent: 'center' },
+  title: { letterSpacing: -0.8 },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.control, padding: 16, minHeight: 58, marginBottom: 28 },
+  pressed: { opacity: 0.8 },
   sectionHeader: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 12 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -6 }, gridWide: { marginBottom: 8 },
-  tile: { flex: 1, padding: 16, minHeight: 208, backgroundColor: colors.card, borderRadius: radius.card, borderWidth: 1, borderColor: colors.border, gap: 20, ...shadow.card },
-  tileWide: { padding: 22, minHeight: 222 }, tileHover: { borderColor: '#A6C4D8', backgroundColor: '#FCFEFF', ...shadow.raised },
-  tileTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  chip: { width: 48, height: 48, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
-  tileText: { gap: 6, flex: 1 }, tileBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  footnote: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center', paddingVertical: 24 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -5, marginBottom: 24 },
+  tile: { flex: 1, padding: 18, minHeight: 152, backgroundColor: colors.card, borderRadius: radius.card, borderWidth: 1, borderColor: colors.border, gap: 6 },
+  tileHover: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
+  tileTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  chip: { width: 42, height: 42, borderRadius: 12, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
+  ediCard: { backgroundColor: colors.navy, borderRadius: radius.card, padding: 24, gap: 22, marginBottom: 28 },
+  ediCardWide: { flexDirection: 'row', alignItems: 'center', padding: 28 },
+  ediLabel: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  ediTitle: { marginTop: 12, marginBottom: 8, letterSpacing: -0.4 },
+  ediButton: { backgroundColor: colors.primary, borderColor: colors.primary, minWidth: 156 },
+  ediButtonMobile: { alignSelf: 'stretch' },
+  guide: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 20, backgroundColor: colors.card, borderRadius: radius.card, borderWidth: 1, borderColor: colors.border },
+  guideIcon: { alignItems: 'center', justifyContent: 'center', width: 40, height: 40, borderRadius: 12, backgroundColor: colors.primarySoft },
+  guideDescription: { marginTop: 4 },
 });

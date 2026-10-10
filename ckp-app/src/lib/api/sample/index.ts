@@ -146,6 +146,7 @@ function toMedicineSummary(m: MedicineDetail): MedicineSummary {
     price: m.price,
     fee: m.fee,
     inHouse: m.inHouse,
+    contrastMedicine: m.contrastMedicine,
     imageUrl: m.imageUrl,
   };
 }

@@ -4,6 +4,7 @@
  */
 import { useState, type ReactNode } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { router } from 'expo-router';
 
 import {
   AppHeader,
@@ -79,7 +80,7 @@ export function NoticeDetailBody({ notice }: { notice: NoticeDetail }) {
         <View style={[styles.head, { padding: bodyPadding }]}>
           {notice.important ? <Badge label="중요 공지" tone="accent" icon="megaphone-outline" size="md" /> : null}
           <Text variant={wide ? 'titleLg' : 'title'} selectable role="heading">
-            {notice.title}
+            {notice.title.trim() || '제목 없는 공지'}
           </Text>
           {date || author ? (
             <View style={styles.meta}>
@@ -140,7 +141,7 @@ export function NoticeDetailBody({ notice }: { notice: NoticeDetail }) {
       ) : null}
 
       <View style={styles.bottomActions}>
-        <Button title="목록으로" variant="secondary" icon="list" onPress={() => goBack('/notices')} />
+        <Button title="공지사항 목록" variant="secondary" icon="list" onPress={() => router.replace('/notices')} />
       </View>
 
       <ImageViewerModal
@@ -193,7 +194,8 @@ export function NoticeDetailScreen({ idx }: { idx: number | null }) {
   }
 
   return (
-    <Screen header={<AppHeader title="공지사항" back backHref="/notices" maxWidth={MAX_WIDTH} />} scroll maxWidth={MAX_WIDTH}>
+    <Screen header={<AppHeader title="공지 상세" back backHref="/notices" maxWidth={MAX_WIDTH} right={<Button title="새로고침" icon="refresh-outline" size="sm" variant="ghost" disabled={idx === null} loading={detail.isFetching} onPress={() => void detail.refetch()} />} />} scroll maxWidth={MAX_WIDTH}>
+      {notice && detail.isRefetchError ? <ErrorState compact title="최신 내용을 불러오지 못했습니다" message="이전에 불러온 내용입니다. 다시 시도해 주세요." onRetry={() => void detail.refetch()} retrying={detail.isFetching} /> : null}
       {content}
     </Screen>
   );

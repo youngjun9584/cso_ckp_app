@@ -1,7 +1,7 @@
 /* 웹 전용 전역 스타일 (네이티브에서는 무시된다) */
 html,
 body {
-  background-color: #f5f7fa;
+  background-color: #f4f6fa;
 }
 
 body {
@@ -9,12 +9,12 @@ body {
     '맑은 고딕', 'Noto Sans KR', 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: #0f2342;
+  color: #172b49;
 }
 
 /* 키보드 사용자를 위한 포커스 표시 */
 :focus-visible {
-  outline: 2px solid #0873b9;
+  outline: 2px solid #245ddb;
   outline-offset: 2px;
 }
 

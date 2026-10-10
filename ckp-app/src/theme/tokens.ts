@@ -5,24 +5,24 @@
 import { Platform, type TextStyle, type ViewStyle } from 'react-native';
 
 export const colors = {
-  primary: '#086EAF',
-  primaryStrong: '#075687',
-  primarySoft: '#EAF3FA',
+  primary: '#245DDB',
+  primaryStrong: '#1948B0',
+  primarySoft: '#EDF3FF',
   teal: '#19C2B4',
   tealSoft: '#E8F7F3',
 
   /** 본문 글자(네이비) */
-  text: '#0F2342',
-  navy: '#0F2342',
-  textSecondary: '#51627D',
-  textMuted: '#65768D',
+  text: '#172B49',
+  navy: '#172B49',
+  textSecondary: '#53647B',
+  textMuted: '#65758B',
   /** 어두운 배경 위 글자 */
   textInverse: '#FFFFFF',
   textInverseMuted: 'rgba(255,255,255,0.72)',
 
-  border: '#E2E8EF',
+  border: '#DFE5EE',
   divider: '#EEF2F6',
-  bg: '#F5F7FA',
+  bg: '#F4F6FA',
   card: '#FFFFFF',
   /** 입력란 비활성 배경 */
   disabledBg: '#EEF1F5',
@@ -38,8 +38,8 @@ export const colors = {
   warning: '#8A5300',
   warningSoft: '#FFF4DB',
 
-  sidebar: '#101E34',
-  sidebarActive: '#213B53',
+  sidebar: '#15243D',
+  sidebarActive: '#284365',
   sidebarBorder: 'rgba(255,255,255,0.08)',
 
   /** 모달 뒤 어두운 막 */
@@ -67,30 +67,30 @@ export const spacing = {
 export const radius = {
   sm: 6,
   control: 12,
-  card: 18,
+  card: 16,
   pill: 999,
 } as const;
 
 /** 글자 크기 (본문 16, 보조 14, 캡션 12, 제목 20~24) */
 export const fontSize = {
-  caption: 12,
+  caption: 13,
   secondary: 14,
   /** 작은 글자 버튼(로그인·회원가입 화면) — Text variant 'button' */
   button: 15,
   body: 16,
   heading: 18,
   title: 20,
-  titleLg: 28,
+  titleLg: 26,
 } as const;
 
 export const lineHeight = {
-  caption: 16,
-  secondary: 20,
+  caption: 19,
+  secondary: 22,
   button: 20,
   body: 24,
   heading: 26,
   title: 28,
-  titleLg: 38,
+  titleLg: 36,
 } as const;
 
 export const fontWeight = {
@@ -125,7 +125,7 @@ export const layout = {
   /** 모바일 하단 탭 높이(안전영역 제외) */
   tabBarHeight: 72,
   /** 넓은 화면 좌측 사이드바 너비 */
-  sidebarWidth: 248,
+  sidebarWidth: 232,
   /** 넓은 화면 본문 최대 너비 */
   contentMaxWidth: 1200,
   /** 폼 화면 본문 최대 너비 */
@@ -140,7 +140,7 @@ export const layout = {
 /** 최소한의 그림자(카드 1dp 수준). New Architecture 는 boxShadow 를 모든 플랫폼에서 지원한다. */
 export const shadow = {
   none: {} as ViewStyle,
-  card: { boxShadow: '0px 3px 14px rgba(15, 35, 66, 0.035)' } as ViewStyle,
+  card: { boxShadow: '0px 2px 6px rgba(15, 35, 66, 0.025)' } as ViewStyle,
   raised: { boxShadow: '0px 8px 24px rgba(15, 35, 66, 0.09)' } as ViewStyle,
   overlay: { boxShadow: '0px 12px 32px rgba(15, 35, 66, 0.22)' } as ViewStyle,
 } as const;
