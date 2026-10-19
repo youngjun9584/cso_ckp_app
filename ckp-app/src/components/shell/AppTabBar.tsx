@@ -81,6 +81,13 @@ export function AppTabBar({ state, navigation, insets, wide }: AppTabBarProps) {
               onPress={() => void go(tab.name)}
             />
           ))}
+          <SidebarItem
+            icon={focusedName === 'manual' ? 'book' : 'book-outline'}
+            label="메뉴얼"
+            active={focusedName === 'manual'}
+            onPress={() => void go('manual')}
+            role="link"
+          />
         </View>
         <View style={styles.flex} />
         <View style={styles.userBox}>

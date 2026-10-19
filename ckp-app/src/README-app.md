@@ -11,6 +11,7 @@ src/app/                  라우트 (_layout.tsx, login.tsx, (app)/…)
   (app)/<탭>/_layout.tsx  탭별 Stack (headerShown:false, initialRouteName:'index')
   (app)/<탭>/*.tsx        기능 화면 (탭: home · medicines · notices · edi · clients)
   (app)/home/index.tsx    홈(메인 메뉴) — 로그인 후·'/' 의 첫 화면 (src/features/home/HomeScreen.tsx)
+  (app)/manual/*          메뉴얼(숨김 탭): 목록 · [page] 스크린샷+설명 — 내용은 src/features/manual/pages.ts, 이미지는 assets/manual/<key>.png(모바일)·<key>-wide.png(넓은 웹)
 src/components/ui/        공통 UI (import { … } from '@/components/ui')
 src/components/shell/     탭 바·부트 화면·PlaceholderScreen·stackScreenOptions·탭 목록(tabs.ts)·탭 이동 도우미(tab-navigation.ts)
 src/lib/api/              getApi(), CkpApi, ApiError, http/upload/sample 구현
@@ -39,6 +40,7 @@ export default function MedicinesScreen() {
 ```
 
 - AppHeader 는 모바일에서 CKP 심볼·계정 버튼·샘플/개발 서버 띠를 자동으로 그린다. 넓은 화면에서는 사이드바가 로고·모드 표시를 맡는다.
+- AppHeader 는 모든 화면에 메뉴얼(?) 버튼을 그린다(현재 경로 → features/manual/pages.ts 의 manualPageForPath). 새 화면을 추가하면 pages.ts 에 항목·스크린샷을 추가하고 manualPageForPath 에 경로를 매핑한다. 메뉴얼 화면 자신은 showHelp={false}.
 - 탭 루트 화면은 `back` 없이, 하위 화면은 `back backHref="/<탭>"` (웹 주소 직접 진입 시 돌아갈 곳).
 
 ## 공통 UI (`@/components/ui`)

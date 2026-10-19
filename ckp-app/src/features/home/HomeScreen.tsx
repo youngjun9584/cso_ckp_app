@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { useNavigation } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import Animated, { ReduceMotion, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import { openTabRoot, openTabScreen, type TabsNavigation } from '@/components/shell/tab-navigation';
 import { APP_TABS, type AppTabName } from '@/components/shell/tabs';
@@ -77,6 +77,12 @@ export function HomeScreen() {
       <View style={styles.guideIcon}><Icon name="images-outline" size={22} color={colors.primary} /></View>
       <View style={styles.flex}><Text variant="bodyStrong">제출 전, 사진을 확인해 주세요</Text><Text variant="secondary" tone="secondary" style={styles.guideDescription}>사진을 크게 확인하고 순서를 바꾼 뒤 제출할 수 있습니다.</Text></View>
     </View>
+    <Pressable accessibilityRole="button" accessibilityLabel="앱 사용 메뉴얼 열기" onPress={() => router.navigate('/manual')}
+      style={(state) => { const { pressed, hovered, focused } = asInteraction(state); return [styles.guide, styles.manual, (hovered || pressed) && styles.tileHover, focused && focusRing]; }}>
+      <View style={styles.guideIcon}><Icon name="book-outline" size={22} color={colors.primary} /></View>
+      <View style={styles.flex}><Text variant="bodyStrong">앱 사용 메뉴얼</Text><Text variant="secondary" tone="secondary" style={styles.guideDescription}>화면마다 스크린샷과 사용 방법을 볼 수 있습니다. 각 화면의 ? 버튼으로도 열립니다.</Text></View>
+      <Icon name="chevron-forward" size={18} color={colors.textMuted} />
+    </Pressable>
   </Screen>;
 }
 
@@ -103,4 +109,5 @@ const styles = StyleSheet.create({
   guide: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 20, backgroundColor: colors.card, borderRadius: radius.card, borderWidth: 1, borderColor: colors.border },
   guideIcon: { alignItems: 'center', justifyContent: 'center', width: 40, height: 40, borderRadius: 12, backgroundColor: colors.primarySoft },
   guideDescription: { marginTop: 4 },
+  manual: { marginTop: 12 },
 });

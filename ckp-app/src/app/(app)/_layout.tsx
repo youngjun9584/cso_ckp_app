@@ -28,6 +28,7 @@ export default function AppLayout() {
       <Tabs.Screen name="edi" options={{ title: 'EDI 등록' }} />
       <Tabs.Screen name="clients" options={{ title: '거래처' }} />
       <Tabs.Screen name="account" options={{ title: '계정', href: null }} />
+      <Tabs.Screen name="manual" options={{ title: '메뉴얼', href: null }} />
     </Tabs>
   );
 }

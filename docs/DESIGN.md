@@ -234,6 +234,8 @@ signup.tsx                  회원가입(가입 신청) — 공개 화면. featu
 (app)/edi/_layout.tsx       Stack  ─ index.tsx(등록 내역, "새 EDI 등록" 버튼) · new.tsx(3단계 등록) · [id].tsx(제출 건 상세)
 (app)/clients/_layout.tsx   Stack  ─ index.tsx · new.tsx(등록) · [idx].tsx(상세)
 (app)/account.tsx           계정(보조 화면, 탭 아님): 사용자 정보, 연결 서버/모드, 로그아웃 — 헤더 우측 아이콘/사이드바 하단에서 진입
+(app)/manual/_layout.tsx    메뉴얼(보조 화면, 탭 아님) Stack ─ index.tsx(화면별 목록) · [page].tsx(스크린샷 + 설명). features/manual/pages.ts 가 내용·스크린샷(assets/manual) 보유.
+                            진입: 모든 AppHeader 우측 ? 버튼(현재 경로에 맞는 페이지로, manualPageForPath) · 사이드바 "메뉴얼" · 홈 "앱 사용 메뉴얼" 행
 index.tsx                   → /home 으로 Redirect (로그인 직후 첫 화면도 /home)
 +not-found.tsx              한국어 안내
 ```
