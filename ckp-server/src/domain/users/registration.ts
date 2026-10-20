@@ -10,10 +10,10 @@
  *   await insertPendingUser(db, input, { passwordHash: hash, roleId, joinYmd });   // 409 DUPLICATE_USER_ID
  *
  * 규칙
- *   - 아이디(usr_id): NFC 정규화 + trim, 2~20자, 한글·영문·숫자·_·-·. 만, 공백 불가.
+ *   - 아이디(usr_id): NFC 정규화 + trim, 2~20자, 한글·영문·숫자·_·-·.·공백(가운데)만.
  *     로그인은 정확히 일치(대소문자 구분)하지만, 비슷해 보이는 계정을 막기 위해 중복은 대소문자·앞뒤 공백을 무시하고 판단한다
  *     (lower(btrim(usr_id)) = lower($1)). 같은 아이디의 동시 가입은 advisory lock 으로 직렬화하고, PK 충돌(23505)도 409 로 바꾼다.
- *   - 비밀번호: 8~64자, 영문과 숫자 모두 포함, 앞뒤 공백 불가, 아이디와 같으면 안 됨(대소문자 무시). bcrypt 로만 저장(MD5 금지).
+ *   - 비밀번호: 4~64자, 앞뒤 공백 불가. bcrypt 로만 저장(MD5 금지).
  *   - 저장 컬럼은 명시한 목록만: usr_id, usr_pwd, usr_nam, phone, email, cpy_nam, apr_yn('N'), join_ymd(KST 오늘), role_id.
  *     요청 본문의 다른 항목(aprYn, roleId 등)은 무시한다. 계좌·신분증·사진 정보는 받지 않는다.
  */
@@ -24,7 +24,7 @@ import { koreanErrorMap, zodFields } from '../../lib/validation.js';
 
 export const USER_ID_MIN_LENGTH = 2;
 export const USER_ID_MAX_LENGTH = 20;
-export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_MIN_LENGTH = 4;
 export const PASSWORD_MAX_LENGTH = 64;
 export const NAME_MAX_LENGTH = 20;
 export const EMAIL_MAX_LENGTH = 200;
@@ -41,15 +41,12 @@ export const REGISTER_MESSAGES = {
 const MSG = {
   idRequired: '아이디를 입력해 주세요.',
   idType: '아이디 형식이 올바르지 않습니다.',
-  idSpace: '아이디에는 공백을 넣을 수 없습니다.',
   idLength: `아이디는 ${USER_ID_MIN_LENGTH}~${USER_ID_MAX_LENGTH}자로 입력해 주세요.`,
-  idChars: '아이디는 한글, 영문, 숫자, 밑줄(_), 하이픈(-), 마침표(.)만 사용할 수 있습니다.',
+  idChars: '아이디는 한글, 영문, 숫자, 공백, 밑줄(_), 하이픈(-), 마침표(.)만 사용할 수 있습니다.',
   pwRequired: '비밀번호를 입력해 주세요.',
   pwType: '비밀번호 형식이 올바르지 않습니다.',
   pwSpace: '비밀번호 앞뒤에는 공백을 넣을 수 없습니다.',
   pwLength: `비밀번호는 ${PASSWORD_MIN_LENGTH}~${PASSWORD_MAX_LENGTH}자로 입력해 주세요.`,
-  pwMix: '비밀번호는 영문과 숫자를 모두 포함해야 합니다.',
-  pwSameAsId: '비밀번호는 아이디와 다르게 입력해 주세요.',
   nameRequired: '이름을 입력해 주세요.',
   nameLength: `이름은 ${NAME_MAX_LENGTH}자 이하로 입력해 주세요.`,
   nameChars: '이름에 사용할 수 없는 문자가 있습니다.',
@@ -64,7 +61,7 @@ const MSG = {
   agreePrivacy: '개인정보 수집·이용에 동의해 주세요.',
 } as const;
 
-const USER_ID_RE = /^[가-힣A-Za-z0-9_.-]+$/;
+const USER_ID_RE = /^[가-힣A-Za-z0-9_. -]+$/;
 const CONTROL_RE = /\p{Cc}/u;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -75,7 +72,6 @@ function typeError(required: string, type: string) {
 
 function userIdProblem(id: string): string | null {
   if (id.length === 0) return MSG.idRequired;
-  if (/\s/.test(id)) return MSG.idSpace;
   if (id.length < USER_ID_MIN_LENGTH || id.length > USER_ID_MAX_LENGTH) return MSG.idLength;
   if (!USER_ID_RE.test(id)) return MSG.idChars;
   return null;
@@ -85,7 +81,6 @@ function passwordProblem(pw: string): string | null {
   if (pw.length === 0) return MSG.pwRequired;
   if (pw !== pw.trim()) return MSG.pwSpace;
   if (pw.length < PASSWORD_MIN_LENGTH || pw.length > PASSWORD_MAX_LENGTH) return MSG.pwLength;
-  if (!/[A-Za-z]/.test(pw) || !/[0-9]/.test(pw)) return MSG.pwMix;
   return null;
 }
 
@@ -201,15 +196,6 @@ export function validateRegistration(input: unknown): ValidRegistration {
   const parsed = RegisterSchema.safeParse(input, { error: koreanErrorMap });
   const fields: Record<string, string> = parsed.success ? {} : zodFields(parsed.error);
   delete fields._; // 본문 자체가 객체가 아닌 경우(필드 없음)
-
-  // 교차 검사: 비밀번호 ≠ 아이디 (둘 다 개별 규칙을 통과했을 때만)
-  if (!fields.usrId && !fields.password && typeof input === 'object' && input !== null) {
-    const raw = input as { usrId?: unknown; password?: unknown };
-    const id = userIdSchema.safeParse(raw.usrId);
-    if (id.success && typeof raw.password === 'string' && raw.password.toLowerCase() === id.data.toLowerCase()) {
-      fields.password = MSG.pwSameAsId;
-    }
-  }
 
   if (!parsed.success || Object.keys(fields).length > 0) fail(fields);
   const d = parsed.data;

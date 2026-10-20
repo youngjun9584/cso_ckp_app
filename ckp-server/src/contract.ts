@@ -156,9 +156,9 @@ export interface CheckUserIdResponse {
  * 400 VALIDATION_FAILED(fields) · 409 DUPLICATE_USER_ID(fields.usrId) · 403 REGISTRATION_DISABLED · 429 RATE_LIMITED
  */
 export interface RegisterRequest {
-  /** 로그인 아이디(usr_id): trim 후 2~20자, 한글·영문·숫자·밑줄(_)·하이픈(-)·마침표(.)만, 공백 불가 */
+  /** 로그인 아이디(usr_id): trim 후 2~20자, 한글·영문·숫자·밑줄(_)·하이픈(-)·마침표(.)·가운데 공백만 */
   usrId: string;
-  /** 8~64자, 영문과 숫자를 모두 포함 (앞뒤 공백 불가) — 서버는 bcrypt 로만 저장 */
+  /** 4~64자 (앞뒤 공백 불가) — 서버는 bcrypt 로만 저장 */
   password: string;
   /** 이름(usr_nam): 1~20자 */
   name: string;

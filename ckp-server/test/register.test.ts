@@ -170,11 +170,9 @@ describe('POST /v1/auth/register', () => {
   });
 
   const ID_LENGTH = '아이디는 2~20자로 입력해 주세요.';
-  const ID_CHARS = '아이디는 한글, 영문, 숫자, 밑줄(_), 하이픈(-), 마침표(.)만 사용할 수 있습니다.';
-  const PW_LENGTH = '비밀번호는 8~64자로 입력해 주세요.';
-  const PW_MIX = '비밀번호는 영문과 숫자를 모두 포함해야 합니다.';
+  const ID_CHARS = '아이디는 한글, 영문, 숫자, 공백, 밑줄(_), 하이픈(-), 마침표(.)만 사용할 수 있습니다.';
+  const PW_LENGTH = '비밀번호는 4~64자로 입력해 주세요.';
   const PW_SPACE = '비밀번호 앞뒤에는 공백을 넣을 수 없습니다.';
-  const PW_SAME = '비밀번호는 아이디와 다르게 입력해 주세요.';
   const PHONE_DIGITS = '휴대폰 번호는 숫자 10~11자리로 입력해 주세요.';
   const PHONE_CHARS = '휴대폰 번호는 숫자와 하이픈(-)만 입력해 주세요.';
   const EMAIL_FORMAT = '이메일 형식이 올바르지 않습니다.';
@@ -185,21 +183,16 @@ describe('POST /v1/auth/register', () => {
     ['아이디 공백만', { usrId: '   ' }, 'usrId', '아이디를 입력해 주세요.'],
     ['아이디 1자', { usrId: 'a' }, 'usrId', ID_LENGTH],
     ['아이디 21자', { usrId: 'a'.repeat(21) }, 'usrId', ID_LENGTH],
-    ['아이디 중간 공백', { usrId: 'ab cd' }, 'usrId', '아이디에는 공백을 넣을 수 없습니다.'],
+    ['아이디 탭 문자', { usrId: 'ab\tcd' }, 'usrId', ID_CHARS],
     ['아이디 특수문자', { usrId: 'ab!cd' }, 'usrId', ID_CHARS],
     ['아이디 이메일 형태', { usrId: 'a@b.com' }, 'usrId', ID_CHARS],
     ['아이디 한글 자모', { usrId: 'ㄱㄴㄷ' }, 'usrId', ID_CHARS],
     ['아이디 숫자 타입', { usrId: 12345 }, 'usrId', '아이디 형식이 올바르지 않습니다.'],
     ['비밀번호 누락', { password: undefined }, 'password', '비밀번호를 입력해 주세요.'],
-    ['비밀번호 7자', { password: 'abcd123' }, 'password', PW_LENGTH],
+    ['비밀번호 3자', { password: 'ab1' }, 'password', PW_LENGTH],
     ['비밀번호 65자', { password: `${'a1'.repeat(32)}a` }, 'password', PW_LENGTH],
-    ['비밀번호 숫자 없음', { password: 'abcdefgh' }, 'password', PW_MIX],
-    ['비밀번호 영문 없음', { password: '12345678' }, 'password', PW_MIX],
-    ['비밀번호 한글+숫자(영문 없음)', { password: '한글비밀번호123' }, 'password', PW_MIX],
     ['비밀번호 앞 공백', { password: ' abcd1234' }, 'password', PW_SPACE],
     ['비밀번호 뒤 공백', { password: 'abcd1234 ' }, 'password', PW_SPACE],
-    ['비밀번호 = 아이디', { usrId: 'same1234', password: 'same1234' }, 'password', PW_SAME],
-    ['비밀번호 = 아이디(대소문자만 다름)', { usrId: 'same1234', password: 'SAME1234' }, 'password', PW_SAME],
     ['이름 누락', { name: undefined }, 'name', '이름을 입력해 주세요.'],
     ['이름 공백만', { name: '   ' }, 'name', '이름을 입력해 주세요.'],
     ['이름 21자', { name: '가'.repeat(21) }, 'name', '이름은 20자 이하로 입력해 주세요.'],
@@ -305,8 +298,7 @@ describe('GET /v1/auth/check-id', () => {
   it.each<[string, string | undefined, string]>([
     ['누락', undefined, '아이디를 입력해 주세요.'],
     ['1자', 'a', '아이디는 2~20자로 입력해 주세요.'],
-    ['공백 포함', 'ab cd', '아이디에는 공백을 넣을 수 없습니다.'],
-    ['특수문자', 'ab#cd', '아이디는 한글, 영문, 숫자, 밑줄(_), 하이픈(-), 마침표(.)만 사용할 수 있습니다.'],
+    ['특수문자', 'ab#cd', '아이디는 한글, 영문, 숫자, 공백, 밑줄(_), 하이픈(-), 마침표(.)만 사용할 수 있습니다.'],
   ])('형식 오류(%s) → 400 fields.usrId', async (_label, usrId, message) => {
     const res = await checkId(t, usrId);
     expect(res.statusCode).toBe(400);
@@ -336,7 +328,7 @@ describe('속도 제한', () => {
 
   it('가입: 실패한 요청(400·409)도 IP 한도에 포함된다', async () => {
     const ip = '10.99.0.3';
-    for (let i = 0; i < 3; i++) expect((await register(t, validBody({ password: 'short' }), ip)).statusCode).toBe(400);
+    for (let i = 0; i < 3; i++) expect((await register(t, validBody({ password: 'abc' }), ip)).statusCode).toBe(400);
     for (let i = 0; i < 2; i++) expect((await register(t, validBody({ usrId: 'ckp_demo' }), ip)).statusCode).toBe(409);
     expect((await register(t, validBody({ usrId: 'rl_after_fail' }), ip)).statusCode).toBe(429);
   });

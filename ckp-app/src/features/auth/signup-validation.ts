@@ -2,9 +2,9 @@
  * 회원가입 입력 검증 — 서버(POST /v1/auth/register, GET /v1/auth/check-id)와 같은 규칙의 순수 함수.
  * 화면(SignupScreen)과 샘플 API(lib/api/sample)가 함께 쓴다. 규칙을 바꾸면 서버도 같이 바꾼다.
  *
- * - 아이디(usr_id): 앞뒤 공백 제거 후 2~20자, 한글·영문·숫자·밑줄(_)·하이픈(-)·마침표(.)만, 공백 불가.
+ * - 아이디(usr_id): 앞뒤 공백 제거 후 2~20자, 한글·영문·숫자·밑줄(_)·하이픈(-)·마침표(.)·가운데 공백만.
  *   로그인은 대소문자까지 정확히 비교하지만, 가입 시 중복은 대소문자 구분 없이 확인한다(비슷한 아이디 방지).
- * - 비밀번호: 8~64자, 영문과 숫자를 모두 포함, 앞뒤 공백 불가, 아이디와 같으면 안 됨.
+ * - 비밀번호: 4~64자, 앞뒤 공백 불가.
  * - 이름 1~20자, 휴대폰 숫자·하이픈(숫자 10~11자리, 010-1234-5678 형태로 보냄), 이메일(선택) ≤200자,
  *   회사명(선택) ≤50자, 개인정보 수집·이용 동의 필수.
  */
@@ -14,7 +14,7 @@ import { formatPhone, onlyDigits } from '@/lib/format';
 export const SIGNUP_LIMITS = {
   usrIdMin: 2,
   usrIdMax: 20,
-  passwordMin: 8,
+  passwordMin: 4,
   passwordMax: 64,
   nameMax: 20,
   phoneMinDigits: 10,
@@ -27,17 +27,14 @@ export const SIGNUP_LIMITS = {
 
 export const SIGNUP_MESSAGES = {
   usrIdRequired: '아이디를 입력해 주세요.',
-  usrIdSpace: '아이디에는 공백을 넣을 수 없습니다.',
   usrIdLength: `아이디는 ${SIGNUP_LIMITS.usrIdMin}~${SIGNUP_LIMITS.usrIdMax}자로 입력해 주세요.`,
-  usrIdChars: '아이디는 한글, 영문, 숫자와 밑줄(_), 하이픈(-), 마침표(.)만 사용할 수 있습니다.',
+  usrIdChars: '아이디는 한글, 영문, 숫자, 공백, 밑줄(_), 하이픈(-), 마침표(.)만 사용할 수 있습니다.',
   usrIdDuplicate: '이미 사용 중인 아이디입니다.',
   usrIdAvailable: '사용할 수 있는 아이디입니다.',
   passwordRequired: '비밀번호를 입력해 주세요.',
   passwordSpace: '비밀번호 앞뒤에는 공백을 넣을 수 없습니다.',
   passwordLength: `비밀번호는 ${SIGNUP_LIMITS.passwordMin}~${SIGNUP_LIMITS.passwordMax}자로 입력해 주세요.`,
-  passwordMix: '비밀번호에 영문과 숫자를 함께 넣어 주세요.',
-  passwordSameAsId: '아이디와 같은 비밀번호는 사용할 수 없습니다.',
-  passwordHint: `${SIGNUP_LIMITS.passwordMin}~${SIGNUP_LIMITS.passwordMax}자, 영문과 숫자를 함께 사용하세요`,
+  passwordHint: `${SIGNUP_LIMITS.passwordMin}~${SIGNUP_LIMITS.passwordMax}자`,
   passwordConfirmRequired: '비밀번호를 한 번 더 입력해 주세요.',
   passwordMismatch: '비밀번호가 일치하지 않습니다.',
   nameRequired: '이름을 입력해 주세요.',
@@ -89,9 +86,7 @@ export const EMPTY_SIGNUP_FORM: SignupFormValues = {
   agreePrivacy: false,
 };
 
-const USR_ID_CHARS = /^[0-9A-Za-z가-힣_.-]+$/;
-const HAS_LETTER = /[A-Za-z]/;
-const HAS_DIGIT = /[0-9]/;
+const USR_ID_CHARS = /^[0-9A-Za-z가-힣_. -]+$/;
 const PHONE_CHARS = /^[0-9-]+$/;
 const EMAIL_FORMAT = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -104,21 +99,16 @@ export const usrIdKey = (value: string | null | undefined): string => normalizeU
 export function validateUsrId(value: string | null | undefined): string | null {
   const id = normalizeUsrId(value);
   if (!id) return SIGNUP_MESSAGES.usrIdRequired;
-  if (/\s/.test(id)) return SIGNUP_MESSAGES.usrIdSpace;
   if (id.length < SIGNUP_LIMITS.usrIdMin || id.length > SIGNUP_LIMITS.usrIdMax) return SIGNUP_MESSAGES.usrIdLength;
   if (!USR_ID_CHARS.test(id)) return SIGNUP_MESSAGES.usrIdChars;
   return null;
 }
 
-export function validatePassword(password: string | null | undefined, usrId: string | null | undefined): string | null {
+export function validatePassword(password: string | null | undefined): string | null {
   const pw = password ?? '';
   if (!pw) return SIGNUP_MESSAGES.passwordRequired;
   if (pw !== pw.trim()) return SIGNUP_MESSAGES.passwordSpace;
   if (pw.length < SIGNUP_LIMITS.passwordMin || pw.length > SIGNUP_LIMITS.passwordMax) return SIGNUP_MESSAGES.passwordLength;
-  if (!HAS_LETTER.test(pw) || !HAS_DIGIT.test(pw)) return SIGNUP_MESSAGES.passwordMix;
-  const id = normalizeUsrId(usrId);
-  // 서버와 같게 대소문자를 무시하고 비교한다
-  if (id && pw.toLowerCase() === id.toLowerCase()) return SIGNUP_MESSAGES.passwordSameAsId;
   return null;
 }
 
@@ -176,7 +166,7 @@ export function validateSignupForm(values: SignupFormValues): SignupFormErrors {
     if (message) errors[field] = message;
   };
   set('usrId', validateUsrId(values.usrId));
-  set('password', validatePassword(values.password, values.usrId));
+  set('password', validatePassword(values.password));
   set('passwordConfirm', validatePasswordConfirm(values.password, values.passwordConfirm));
   set('name', validateName(values.name));
   set('phone', validatePhone(values.phone));
@@ -197,7 +187,7 @@ export function validateRegisterRequest(body: Partial<RegisterRequest> | null | 
   };
   const str = (v: unknown) => (typeof v === 'string' ? v : '');
   set('usrId', validateUsrId(str(body?.usrId)));
-  set('password', validatePassword(str(body?.password), str(body?.usrId)));
+  set('password', validatePassword(str(body?.password)));
   set('name', validateName(str(body?.name)));
   set('phone', validatePhone(str(body?.phone)));
   set('email', validateEmail(str(body?.email)));

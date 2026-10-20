@@ -264,7 +264,7 @@ export function SignupScreen() {
         }}
         label="비밀번호"
         required
-        placeholder="영문·숫자 8자 이상"
+        placeholder="4자 이상"
         leftIcon="lock-closed-outline"
         leftIconColor={colors.primary}
         secureToggle
