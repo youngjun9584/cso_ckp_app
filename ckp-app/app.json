@@ -15,7 +15,9 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleDevelopmentRegion": "ko",
-        "CFBundleLocalizations": ["ko"],
+        "CFBundleLocalizations": [
+          "ko"
+        ],
         "CFBundleAllowMixedLocalizations": true
       }
     },
@@ -28,7 +30,7 @@
       }
     },
     "android": {
-      "package": "com.ckp.app",
+      "package": "com.ckp.cso",
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -70,6 +72,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ecce869a-41ab-44bf-854a-3dc1cd2be244"
+      }
+    },
+    "owner": "parkbears-team"
   }
 }
