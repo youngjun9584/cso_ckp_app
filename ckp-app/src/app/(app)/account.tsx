@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, Switch, View } from 'react-native';
 import Constants from 'expo-constants';
+import * as Linking from 'expo-linking';
 
 import {
   AppHeader,
@@ -37,6 +38,14 @@ export default function AccountScreen() {
   const source = useDataSource();
   const sample = useSampleSettings();
   const [signingOut, setSigningOut] = useState(false);
+
+  async function openPrivacyPage(path: 'privacy.html' | 'delete-account.html') {
+    try {
+      await Linking.openURL(`https://ckpno1.com/${path}`);
+    } catch {
+      toast.info('페이지를 열지 못했습니다. ckpno1.com에서 다시 시도하거나 peopleusdeveloper@gmail.com으로 문의해 주세요.');
+    }
+  }
 
   async function logout() {
     // EDI 작성 건은 작성 화면을 떠나 있어도 메모리에 남아 있고, 로그아웃하면 버려진다 → 작성 건 상태로 직접 확인
@@ -120,6 +129,13 @@ export default function AccountScreen() {
             </Card>
           </>
         ) : null}
+
+        <SectionTitle title="개인정보 및 계정 관리" />
+        <Card>
+          <Button title="개인정보처리방침" variant="secondary" fullWidth onPress={() => void openPrivacyPage('privacy.html')} />
+          <Text variant="secondary" tone="secondary">계정과 관련 데이터의 삭제를 요청할 수 있습니다. 요청 방법과 처리 범위를 안내 페이지에서 확인해 주세요.</Text>
+          <Button title="계정 및 데이터 삭제 요청" variant="secondary" fullWidth onPress={() => void openPrivacyPage('delete-account.html')} />
+        </Card>
 
         <Button title="로그아웃" variant="secondary" icon="log-out-outline" fullWidth loading={signingOut} onPress={() => void logout()} />
       </View>
