@@ -10,7 +10,7 @@
     "backgroundColor": "#F3F5F8",
     "ios": {
       "icon": "./assets/images/icon.png",
-      "bundleIdentifier": "com.ckp.app",
+      "bundleIdentifier": "com.ckp.cso",
       "supportsTablet": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
